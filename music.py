@@ -1,4 +1,8 @@
 # bot.py
+# pip install youtube_dl
+# pip install -U discord
+# pip install python-dotenv
+# pip install youtube_dl
 import os
 import random
 import asyncio
@@ -18,6 +22,7 @@ ydl_opts = {
         'preferredquality' : '192',
     }],
 }
+
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = os.getenv('DISCORD_GUILD')
 bot = commands.Bot(command_prefix='!')
@@ -26,6 +31,10 @@ currently_playing = False
 current_song = None
 skip = False
 music_queueue = []
+
+funny_name = ""
+funny_phrase = ""
+funny_count = 0
 
 ffmpeg_options = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
 @bot.event
@@ -181,5 +190,28 @@ async def flip_coin(ctx, flips:int = 1):
         result_print += results[0]
 
     await ctx.send(result_print)
+
+'''
+counter functions for tom funny tings
+'''
+@bot.command(name='funnyCounterInit',help='initializes the funny count to keep track of a funny thing')
+async def funny_init(ctx, individual:str, *args):
+    global funny_name
+    global funny_phrase
+    global funny_count
+    funny_name = individual
+    funny_phrase = " ".join(args)
+    funny_count = 0
+
+@bot.command(name='plusOne',help='add one to funny count')
+async def add_to_counter(ctx,num:int = 1):
+    global funny_count
+    funny_count += num
+    await ctx.message.delete()
+
+@bot.command(name='displayFunny',help='display funny count')
+async def add_to_counter(ctx,num:int = 1):
+    global funny_name
+    await ctx.send(f"{funny_name} has said: {funny_phrase} {funny_count} times")
 
 bot.run(TOKEN)
