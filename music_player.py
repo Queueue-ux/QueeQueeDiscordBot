@@ -112,6 +112,10 @@ class music_player(commands.Cog):
     async def harry_potter_XD(self,ctx):
         await self.play_music(ctx,"harry potter distorted")
 
+    @commands.command(name='tr',help='makes youtube search a trap remix')
+    async def trap_remix(self,ctx,*args):
+        await self.play_music(ctx," ".join(args) + " trap remix")
+
     @commands.command(name='current',help='plays video from youtube in voice channel')
     async def display_current(self,ctx):
         total_time = datetime.timedelta(seconds = self.seconds_playing)
@@ -167,7 +171,8 @@ class music_player(commands.Cog):
                 queue_list += "".join([f"\t{i[0]+1}: {i[1]['title']}({i[1]['duration']})\n" for i in enumerate(self.music_queueue) if i[0] + 1 < 6])
             
             if len(self.music_queueue) >= 6 and not list_full:
-                queue_list += f"...\ntotal queue length: {len(self.music_queueue)}\n"
+                queue_list += f"...\ntotal queue length: {len(self.music_queueue)}{len(self.music_queueue) - 5} more\n"
+
             if len(queue_list) == 0:
                 pass
             else:
