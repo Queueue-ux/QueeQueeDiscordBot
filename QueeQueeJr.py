@@ -14,6 +14,7 @@ from music_player import music_player
 from misc import Miscellaneous
 from listeners import listeners
 from errors import ErrorHandling
+from straw_poll import straw_poll
 
 load_dotenv()
 
@@ -26,5 +27,6 @@ bot.add_cog(music_player(bot))
 bot.add_cog(Miscellaneous(bot))
 bot.add_cog(listeners(bot,GUILD))
 bot.add_cog(ErrorHandling(bot))
+bot.add_cog(straw_poll(bot))
 
 bot.run(TOKEN)
