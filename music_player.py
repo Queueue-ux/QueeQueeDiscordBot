@@ -13,6 +13,7 @@ class music_player(commands.Cog):
         self.currently_playing = False
         self.paused = False
         self.current_song = None
+        self.seconds_playing = 0
         self.skip = False
         self.music_queueue = []
         self.ydl_opts = {
@@ -52,37 +53,42 @@ class music_player(commands.Cog):
             if not self.voice_channel_connection:
                 self.voice_channel_connection = await channel.connect()
             with YoutubeDL(self.ydl_opts) as ydl:
-                try:
-                    user_input = " ".join(args)
-                    if user_input.find("https://www.youtube.com") != -1:
-                        search = ydl.extract_info(user_input,download=False)
-                        source = search['formats'][0]['url']
-                        title = search['title']
-                        duration = datetime.timedelta(seconds = search['duration'])
-                        thumbnail = None
-                        
-                    else:
-                        search = ydl.extract_info(f"ytsearch:{user_input}",download=False)
-                        if not search['entries']:
-                            await ctx.send("error retrieving video")
-                            return
-                        source = search['entries'][0]['formats'][0]['url']
-                        title = search['entries'][0]['title']
-                        thumbnail = search['entries'][0]['thumbnail']
-                        duration = datetime.timedelta(seconds = search['entries'][0]['duration'])
-                    self.music_queueue.append({'source':source,'title':title,'thumbnail':thumbnail,'duration':duration})
+
+                user_input = " ".join(args)
+                if user_input.find("https://www.youtube.com") != -1:
+                    search = ydl.extract_info(user_input,download=False)
+                    source = search['formats'][0]['url']
+                    title = search['title']
+                    duration = datetime.timedelta(seconds = search['duration'])
+                    thumbnail = None
+                    
+                else:
+                    search = ydl.extract_info(f"ytsearch:{user_input}",download=False)
+                    if not search['entries']:
+                        await ctx.send("error retrieving video")
+                        return
+                    source = search['entries'][0]['formats'][0]['url']
+                    title = search['entries'][0]['title']
+                    thumbnail = search['entries'][0]['thumbnail']
+                    duration = datetime.timedelta(seconds = search['entries'][0]['duration'])
+                self.music_queueue.append({'source':source,'title':title,'thumbnail':thumbnail,'duration':duration})
+                total_time = datetime.timedelta(seconds = 0)
+                for x in self.music_queueue:
+                    total_time += x['duration']
+                if self.current_song:
+                    await ctx.send(f"{title} ({duration}) added (playing in {(self.current_song['duration'] - datetime.timedelta(seconds = self.seconds_playing)) + total_time})")
+                else:
                     await ctx.send(f"{title} ({duration}) added")
-                    if not self.currently_playing:
-                        self.currently_playing = True
-                        await self._play_until_done(ctx) 
-                except youtube_dl.utils.DownloadError:
-                    await ctx.send("error retrieving video")
-                    return
+
+                if not self.currently_playing:
+                    self.currently_playing = True
+                    await self._play_until_done(ctx) 
         else:
             await ctx.send('Error: must be in voice channel')
 
     async def _play_until_done(self,channel,options=True):
         while self.music_queueue and self.voice_channel_connection:
+            self.seconds_playing = 0
             self.current_song = self.music_queueue.pop(0) # pop top of queue off
             if self.current_song['thumbnail']:
                 await channel.send(self.current_song['thumbnail']) # post thumbnail
@@ -93,6 +99,7 @@ class music_player(commands.Cog):
             self.voice_channel_connection.play(FFmpegPCMAudio(self.current_song['source']))
             while self.voice_channel_connection and (self.voice_channel_connection.is_playing() and not self.skip) or self.paused: # don't go to next song until we're done with the current song
                 await asyncio.sleep(1)
+                self.seconds_playing += 1
             self.skip = False
             self.current_song = None
         self.currently_playing = False
@@ -104,6 +111,11 @@ class music_player(commands.Cog):
     @commands.command(name='hp',help='plays video from youtube in voice channel')
     async def harry_potter_XD(self,ctx):
         await self.play_music(ctx,"harry potter distorted")
+
+    @commands.command(name='current',help='plays video from youtube in voice channel')
+    async def display_current(self,ctx):
+        total_time = datetime.timedelta(seconds = self.seconds_playing)
+        await ctx.send(f"**currently playing**: {self.current_song['title']}\n{total_time}/{self.current_song['duration']}")
 
     @commands.command(name='pause',help='pauses current stream of music')
     async def pause_music(self,ctx,*args):
