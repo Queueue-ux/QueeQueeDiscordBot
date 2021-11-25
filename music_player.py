@@ -86,7 +86,7 @@ class music_player(commands.Cog):
             self.current_song = self.music_queueue.pop(0) # pop top of queue off
             if self.current_song['thumbnail']:
                 await channel.send(self.current_song['thumbnail']) # post thumbnail
-            await channel.send(f"now playing: {self.current_song['title']} ({self.current_song['duration']})") # post thumbnail
+            await channel.send(f"**now playing**: {self.current_song['title']} ({self.current_song['duration']})") # post thumbnail
             #if options:
                 #self.voice_channel_connection.play(FFmpegPCMAudio(self.current_song['source'],**self.ffmpeg_options))
             #else:
@@ -142,20 +142,30 @@ class music_player(commands.Cog):
                 await self._play_until_done(ctx,options=False)
 
     @commands.command(name='queue',help='lists current song along with everything currently queued up')
-    async def list_queue(self, ctx,*args):
+    async def list_queue(self, ctx,list_full = False,*args):
         if self.voice_channel_connection and self.current_song:
-            await ctx.send(f"**now playing**: {self.current_song['title']}({self.current_song['duration']})\nQueued up:")
+            await ctx.send(f"**now playing**: {self.current_song['title']}({self.current_song['duration']})\nQueue:")
             total_time = datetime.timedelta(seconds = 0)
             for x in self.music_queueue:
                 total_time += x['duration']
             queue_list = f"total time: {total_time}\n"
-            queue_list += "".join([f"\t{i[0]+1}: {i[1]['title']}({i[1]['duration']})\n" for i in enumerate(self.music_queueue) if i[0] + 1 < 6])
+            if list_full:
+                queue_list += "".join([f"\t{i[0]+1}: {i[1]['title']}({i[1]['duration']})\n" for i in enumerate(self.music_queueue)])
+            else:
+                queue_list += "".join([f"\t{i[0]+1}: {i[1]['title']}({i[1]['duration']})\n" for i in enumerate(self.music_queueue) if i[0] + 1 < 6])
+            
+            if len(self.music_queueue) >= 6 and not list_full:
+                queue_list += f"...\ntotal queue length: {len(self.music_queueue)}\n"
             if len(queue_list) == 0:
                 pass
             else:
                 await ctx.send(queue_list)
         else:
             await ctx.send("queue empty")
+
+    @commands.command(name='queueListAll',help='lists full queue')
+    async def list_queue_full(self, ctx,*args):
+        await self.list_queue(ctx,list_full = True)
 
     @commands.command(name='remove',help='remove song from queue at index, default is top of queue')
     async def remove_at_index(self, ctx, index:int = 1):
