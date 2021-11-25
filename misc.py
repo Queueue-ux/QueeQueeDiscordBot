@@ -12,6 +12,9 @@ class Miscellaneous(commands.Cog):
         if flips > 500000:
             await ctx.send('Error: Max flips is 500000')
             return
+        if flips <= 0:
+            await ctx.send('idiot')
+            return
 
         results = [random.choice(choices) for i in range(flips)]
 
