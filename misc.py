@@ -13,7 +13,7 @@ class Miscellaneous(commands.Cog):
             await ctx.send('Error: Max flips is 500000')
             return
         if flips <= 0:
-            await ctx.send('idiot')
+            await ctx.send('```fix\nidiot```')
             return
 
         results = [random.choice(choices) for i in range(flips)]
