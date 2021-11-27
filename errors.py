@@ -32,3 +32,11 @@ class ErrorHandling(commands.Cog):
         with open('err.log', 'a') as f:
             print(" ".join(args),file = f)
             print(f"\n\ncontext:\n{self._context_reader(ctx)}\n\n\n===========================================\n===========================================\n", file=f)
+    
+    @commands.command(name='suggestion',help='make a suggestion for what to add or change about QueeQueeJR')
+    async def suggest(self, ctx, *args):
+        if len(args) < 1:
+            await ctx.send("please describe what you want added/changed")
+        with open('suggested_changes.log', 'a') as f:
+            print(" ".join(args),file = f)
+            print(f"\n\n\n===========================================\n===========================================\n", file=f)
