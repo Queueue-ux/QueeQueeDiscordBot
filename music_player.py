@@ -152,7 +152,7 @@ class music_player(commands.Cog):
             channel = ctx.author.voice.channel
             if not self.voice_channel_connection:
                 self.voice_channel_connection = await channel.connect()
-            self.music_queueue.append({'source':'love.mp3','title':'people fall in love','thumbnail':None})
+            self.music_queueue.append({'source':'love.mp3','title':'people fall in love','thumbnail':None,'duration':datetime.timedelta(seconds = 7)})
             if not self.currently_playing:
                 self.currently_playing = True
                 await self._play_until_done(ctx,options=False)
