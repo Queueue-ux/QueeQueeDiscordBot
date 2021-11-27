@@ -15,6 +15,7 @@ class music_player(commands.Cog):
         self.current_song = None
         self.seconds_playing = 0
         self.skip = False
+        self.loop = False
         self.music_queueue = []
         self.ydl_opts = {
             'format' : 'bestaudio/best',
@@ -86,21 +87,25 @@ class music_player(commands.Cog):
             await ctx.send('Error: must be in voice channel')
 
     async def _play_until_done(self,channel,options=True):
-        while self.music_queueue and self.voice_channel_connection:
+        while (self.music_queueue and self.voice_channel_connection) or self.current_song:
             self.seconds_playing = 0
-            self.current_song = self.music_queueue.pop(0) # pop top of queue off
+            if self.loop:
+                if not self.current_song:
+                    self.current_song = self.music_queueue.pop(0)
+            else:
+                self.current_song = self.music_queueue.pop(0) # pop top of queue off
+
             if self.current_song['thumbnail']:
                 await channel.send(self.current_song['thumbnail']) # post thumbnail
-            await channel.send(f"**now playing**: {self.current_song['title']} ({self.current_song['duration']})") # post thumbnail
-            #if options:
-                #self.voice_channel_connection.play(FFmpegPCMAudio(self.current_song['source'],**self.ffmpeg_options))
-            #else:
-            self.voice_channel_connection.play(FFmpegPCMAudio(self.current_song['source']))
+            if not self.loop:
+                await channel.send(f"**now playing**: {self.current_song['title']} ({self.current_song['duration']})") # post thumbnail
+            self.voice_channel_connection.play(FFmpegPCMAudio(self.current_song['source'], options={'options':'-ar 48000'}))
             while self.voice_channel_connection and (self.voice_channel_connection.is_playing() and not self.skip) or self.paused: # don't go to next song until we're done with the current song
                 await asyncio.sleep(1)
                 self.seconds_playing += 1
             self.skip = False
-            self.current_song = None
+            if not self.loop:
+                self.current_song = None
         self.currently_playing = False
     
     async def _noSkip(self):
@@ -143,7 +148,9 @@ class music_player(commands.Cog):
             self.voice_channel_connection.stop()
             self.skip = True
             self.paused = False
-            await ctx.send(f"{self.current_song['title']} skipped")
+            self.loop = False
+            #self.current_song = None
+            await ctx.send(f"**skipped --** {self.current_song['title']}")
 
     @commands.command(name='love',help='people fall in love in mysterious ways')
     async def love_you(self, ctx, *args):
@@ -156,7 +163,7 @@ class music_player(commands.Cog):
                 self.currently_playing = True
                 await self._play_until_done(ctx,options=False)
 
-    @commands.command(name='queue',help='lists current song along with everything currently queued up')
+    @commands.command(name='queue',aliases = ["q","que"],help='lists current song along with everything currently queued up')
     async def list_queue(self, ctx,list_full = False,*args):
         if self.voice_channel_connection and self.current_song:
             await ctx.send(f"**now playing**: {self.current_song['title']}({self.current_song['duration']})\nQueue:")
@@ -191,9 +198,30 @@ class music_player(commands.Cog):
         else:
             await ctx.send(f"index not in queue")
     
+    @commands.command(name='join',help='bot leaves channel')
+    async def join_channel(self, ctx,*args):
+        channel = ctx.author.voice.channel
+        self.voice_channel_connection = await channel.connect()
+    
+    @commands.command(name='loop',help='loop current song, call again to stop looping')
+    async def loop_song(self, ctx):
+        if not self.loop:
+            if self.current_song:
+                await ctx.send(f"{self.current_song['title']} now looping")
+            else:
+                await ctx.send(f"next song will loop")
+            self.loop = True
+        else:
+            if self.current_song:
+                await ctx.send(f"{self.current_song['title']} no longer loop")
+            else:
+                await ctx.send(f"next song will no longer loop")
+            self.loop = False
+
     @commands.command(name='leave',help='bot leaves channel')
     async def leave_channel(self, ctx,*args):
         await self.voice_channel_connection.disconnect()
+        self.voice_channel_connection = None
 
     @commands.command(name='resume',help='resumes current music stream')
     async def resume_music(self, ctx,*args):
