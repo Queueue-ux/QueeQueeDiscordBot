@@ -1,0 +1,5 @@
+run with nohup python3.10 QueeQueeJr.py
+
+to kill:
+	first find process using: ps -ef | grep python3.10 QueeQueeJr.py
+	then do kill {number of process found by search}
