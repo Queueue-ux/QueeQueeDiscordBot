@@ -53,17 +53,16 @@ class music_player(commands.Cog):
             if not self.voice_channel_connection:
                 self.voice_channel_connection = await channel.connect()
             with YoutubeDL(self.ydl_opts) as ydl:
-
                 user_input = " ".join(args)
                 if user_input.find("https://www.youtube.com") != -1:
-                    search = ydl.extract_info(user_input,download=False)
+                    search = ydl.extract_info(f"{user_input} --cookies youtube.com_cookies.txt",download=False) # --cookies allows us to find explicit videos
                     source = search['formats'][0]['url']
                     title = search['title']
                     duration = datetime.timedelta(seconds = search['duration'])
                     thumbnail = None
                     
                 else:
-                    search = ydl.extract_info(f"ytsearch:{user_input}",download=False)
+                    search = ydl.extract_info(f"ytsearch:{user_input} --cookies youtube.com_cookies.txt",download=False)
                     if not search['entries']:
                         await ctx.send("error retrieving video")
                         return
@@ -191,6 +190,10 @@ class music_player(commands.Cog):
             await ctx.send(f"{removed['title']} removed")
         else:
             await ctx.send(f"index not in queue")
+    
+    @commands.command(name='leave',help='bot leaves channel')
+    async def leave_channel(self, ctx,*args):
+        await self.voice_channel_connection.disconnect()
 
     @commands.command(name='resume',help='resumes current music stream')
     async def resume_music(self, ctx,*args):
