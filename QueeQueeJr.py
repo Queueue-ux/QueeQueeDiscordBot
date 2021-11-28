@@ -1,7 +1,7 @@
 # pip install youtube_dl
 # pip install -U discord
 # pip install python-dotenv
-# pip install youtube_dl
+#python3 -m pip install -U yt-dlp
 # pip install PyNaCl
 # add ffmpeg install to path if on windows
 
