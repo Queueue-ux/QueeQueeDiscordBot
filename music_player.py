@@ -1,10 +1,11 @@
 import datetime
 from discord.ext import commands
-from youtube_dl import YoutubeDL
+from yt_dlp import YoutubeDL
 from discord import FFmpegPCMAudio
 import asyncio
-
-import youtube_dl
+import os
+import urllib.request
+import re
 
 class music_player(commands.Cog):
     def __init__(self,bot):
@@ -17,6 +18,8 @@ class music_player(commands.Cog):
         self.skip = False
         self.loop = False
         self.music_queueue = []
+        test = os.getcwd() + '\\youtube.com_cookies.txt'
+        print(test)
         self.ydl_opts = {
             'format' : 'bestaudio/best',
             'postprocessors': [{
@@ -24,6 +27,8 @@ class music_player(commands.Cog):
                 'preferredcodec': 'mp3',
                 'preferredquality' : '192',
                 }],
+            'cookiefile:' : os.getcwd() + '\\youtube.com_cookies.txt',
+            'prefer_ffmpeg' : True,
             }
         self.ffmpeg_options = {
             'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 
@@ -56,14 +61,20 @@ class music_player(commands.Cog):
             with YoutubeDL(self.ydl_opts) as ydl:
                 user_input = " ".join(args)
                 if user_input.find("https://www.youtube.com") != -1:
-                    search = ydl.extract_info(f"{user_input} --cookies youtube.com_cookies.txt",download=False) # --cookies allows us to find explicit videos
+                    search = ydl.extract_info(f"{user_input}",download=False) # --cookies allows us to find explicit videos
                     source = search['formats'][0]['url']
                     title = search['title']
                     duration = datetime.timedelta(seconds = search['duration'])
                     thumbnail = None
                     
                 else:
-                    search = ydl.extract_info(f"ytsearch:{user_input} --cookies youtube.com_cookies.txt",download=False)
+                    # first find actual link- can't use youtube-dl because it will break on age-restrict
+                    #user_input = user_input.replace(" ", "+")
+                    #html = urllib.request.urlopen("https://www.youtube.com/results?search_query=" + user_input)
+                    #video_ids = re.findall(r"watch\?v=(\S{11})", html.read().decode())
+                    #top_url = ("https://www.youtube.com/watch?v=" + video_ids[0])
+                    #search = ydl.extract_info(f"{top_url}" ,download=False)
+                    search = ydl.extract_info(f"ytsearch:{user_input}" ,download=False)
                     if not search['entries']:
                         await ctx.send("error retrieving video")
                         return
