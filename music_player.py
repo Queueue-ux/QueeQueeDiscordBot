@@ -2,6 +2,7 @@ import datetime
 from discord.ext import commands
 from yt_dlp import YoutubeDL
 from discord import FFmpegPCMAudio
+import time
 import asyncio
 import os
 import urllib.request
@@ -17,6 +18,8 @@ class music_player(commands.Cog):
         self.seconds_playing = 0
         self.skip = False
         self.loop = False
+        self.start_time = 0 # TESTING ONLY
+        self.end_time = 0 # TESTING ONLY
         self.music_queueue = []
         test = os.getcwd() + '\\youtube.com_cookies.txt'
         print(test)
@@ -51,6 +54,7 @@ class music_player(commands.Cog):
 
     @commands.command(name='play',help='plays video from youtube in voice channel')
     async def play_music(self,ctx,*args):
+        self.start_time = time.perf_counter() # TESTING ONLY
         if len(args) == 0:
             await ctx.send("usage: !play {name of song / direct youtube link to song}")
             return
@@ -69,11 +73,6 @@ class music_player(commands.Cog):
                     
                 else:
                     # first find actual link- can't use youtube-dl because it will break on age-restrict
-                    #user_input = user_input.replace(" ", "+")
-                    #html = urllib.request.urlopen("https://www.youtube.com/results?search_query=" + user_input)
-                    #video_ids = re.findall(r"watch\?v=(\S{11})", html.read().decode())
-                    #top_url = ("https://www.youtube.com/watch?v=" + video_ids[0])
-                    #search = ydl.extract_info(f"{top_url}" ,download=False)
                     search = ydl.extract_info(f"ytsearch:{user_input}" ,download=False)
                     if not search['entries']:
                         await ctx.send("error retrieving video")
@@ -82,6 +81,7 @@ class music_player(commands.Cog):
                     title = search['entries'][0]['title']
                     thumbnail = search['entries'][0]['thumbnail']
                     duration = datetime.timedelta(seconds = search['entries'][0]['duration'])
+    
                 self.music_queueue.append({'source':source,'title':title,'thumbnail':thumbnail,'duration':duration})
                 total_time = datetime.timedelta(seconds = 0)
                 for x in self.music_queueue:
@@ -111,6 +111,8 @@ class music_player(commands.Cog):
             if not self.loop:
                 await channel.send(f"**now playing**: {self.current_song['title']} ({self.current_song['duration']})") # post thumbnail
             self.voice_channel_connection.play(FFmpegPCMAudio(self.current_song['source'], options={'options':'-ar 48000'}))
+            self.end_time = time.perf_counter() # TESTING ONLY
+            print(f"TOTAL TIME: {self.end_time-self.start_time}\n")
             while self.voice_channel_connection and (self.voice_channel_connection.is_playing() and not self.skip) or self.paused: # don't go to next song until we're done with the current song
                 await asyncio.sleep(1)
                 self.seconds_playing += 1
