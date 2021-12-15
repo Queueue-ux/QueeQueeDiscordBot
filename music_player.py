@@ -1,10 +1,10 @@
-import datetime
+from datetime import timedelta
 from discord.ext import commands
 from yt_dlp import YoutubeDL
 from discord import FFmpegPCMAudio
 import time
 import asyncio
-import os
+from os import getcwd
 
 class music_player(commands.Cog):
     def __init__(self,bot):
@@ -19,7 +19,7 @@ class music_player(commands.Cog):
         self.start_time = 0 # TESTING ONLY
         self.end_time = 0 # TESTING ONLY
         self.music_queueue = []
-        test = os.getcwd() + '\\youtube.com_cookies.txt'
+        test = getcwd() + '\\youtube.com_cookies.txt'
         print(test)
         self.ydl_opts = {
             'format': 'bestaudio/best',
@@ -39,7 +39,7 @@ class music_player(commands.Cog):
             'default_search': 'auto',
             'simulate' : True,
             'source_address': '0.0.0.0', # bind to ipv4 since ipv6 addresses cause issues sometimes
-            'cookiefile:' : os.getcwd() + '\\youtube.com_cookies.txt',
+            'cookiefile:' : getcwd() + '\\youtube.com_cookies.txt',
             'prefer_ffmpeg' : True,
         }
         self.ffmpeg_options = {
@@ -83,7 +83,7 @@ class music_player(commands.Cog):
                     search = await loop.run_in_executor(None, lambda: ydl.extract_info(user_input,download=False))
                     source = search['formats'][0]['url']
                     title = search['title']
-                    duration = datetime.timedelta(seconds = search['duration'])
+                    duration = timedelta(seconds = search['duration'])
                     thumbnail = None
                     
                 else:
@@ -96,14 +96,14 @@ class music_player(commands.Cog):
                     source = search['entries'][0]['formats'][0]['url']
                     title = search['entries'][0]['title']
                     thumbnail = search['entries'][0]['thumbnail']
-                    duration = datetime.timedelta(seconds = search['entries'][0]['duration'])
+                    duration = timedelta(seconds = search['entries'][0]['duration'])
 
                 self.music_queueue.append({'source':source,'title':title,'thumbnail':thumbnail,'duration':duration})
-                total_time = datetime.timedelta(seconds = 0)
+                total_time = timedelta(seconds = 0)
                 for x in self.music_queueue:
                     total_time += x['duration']
                 if self.current_song:
-                    await ctx.send(f"{title} ({duration}) added (playing in {(self.current_song['duration'] - datetime.timedelta(seconds = self.seconds_playing)) + total_time})")
+                    await ctx.send(f"{title} ({duration}) added (playing in {(self.current_song['duration'] - timedelta(seconds = self.seconds_playing)) + total_time})")
                 else:
                     await ctx.send(f"{title} ({duration}) added")
                 # testing timings
@@ -159,7 +159,7 @@ class music_player(commands.Cog):
 
     @commands.command(name='current',help='plays video from youtube in voice channel')
     async def display_current(self,ctx):
-        total_time = datetime.timedelta(seconds = self.seconds_playing)
+        total_time = timedelta(seconds = self.seconds_playing)
         await ctx.send(f"**currently playing**: {self.current_song['title']}\n{total_time}/{self.current_song['duration']}")
 
     @commands.command(name='pause',help='pauses current stream of music')
@@ -195,7 +195,7 @@ class music_player(commands.Cog):
             channel = ctx.author.voice.channel
             if not self.voice_channel_connection:
                 self.voice_channel_connection = await channel.connect()
-            self.music_queueue.append({'source':'love.mp3','title':'people fall in love','thumbnail':None,'duration':datetime.timedelta(seconds = 7)})
+            self.music_queueue.append({'source':'love.mp3','title':'people fall in love','thumbnail':None,'duration':timedelta(seconds = 7)})
             if not self.currently_playing:
                 self.currently_playing = True
                 await self._play_until_done(ctx,options=False)
@@ -204,7 +204,7 @@ class music_player(commands.Cog):
     async def list_queue(self, ctx,list_full = False,*args):
         if self.voice_channel_connection and self.current_song:
             await ctx.send(f"**now playing**: {self.current_song['title']}({self.current_song['duration']})\nQueue:")
-            total_time = datetime.timedelta(seconds = 0)
+            total_time = timedelta(seconds = 0)
             for x in self.music_queueue:
                 total_time += x['duration']
             queue_list = f"total time: {total_time}\n"
