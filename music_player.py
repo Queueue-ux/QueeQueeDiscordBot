@@ -5,9 +5,6 @@ from discord import FFmpegPCMAudio
 import time
 import asyncio
 import os
-import urllib.request
-import re
-import requests
 
 class music_player(commands.Cog):
     def __init__(self,bot):
