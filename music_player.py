@@ -7,6 +7,7 @@ import asyncio
 import os
 import urllib.request
 import re
+import requests
 
 class music_player(commands.Cog):
     def __init__(self,bot):
@@ -24,15 +25,26 @@ class music_player(commands.Cog):
         test = os.getcwd() + '\\youtube.com_cookies.txt'
         print(test)
         self.ydl_opts = {
-            'format' : 'bestaudio/best',
+            'format': 'bestaudio/best',
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
                 'preferredquality' : '192',
                 }],
+            'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
+            'restrictfilenames': True,
+            'noplaylist': True,
+            'nocheckcertificate': True,
+            'ignoreerrors': False,
+            'logtostderr': False,
+            'quiet': True,
+            'no_warnings': True,
+            'default_search': 'auto',
+            'simulate' : True,
+            'source_address': '0.0.0.0', # bind to ipv4 since ipv6 addresses cause issues sometimes
             'cookiefile:' : os.getcwd() + '\\youtube.com_cookies.txt',
             'prefer_ffmpeg' : True,
-            }
+        }
         self.ffmpeg_options = {
             'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 
             'options': '-vn'
@@ -49,7 +61,10 @@ class music_player(commands.Cog):
                 print(self.bot.user)
                 self.voice_channel_connection = None
                 self.currently_playing = False
-            await before.channel.guild.channels[2].send("see ya!")
+            for x in before.channel.guild.channels:
+                if x.name == "general-garbage":
+                    await x.send("see ya!")
+                    return
             
 
     @commands.command(name='play',help='plays video from youtube in voice channel')
@@ -60,12 +75,15 @@ class music_player(commands.Cog):
             return
         if ctx.author.voice:
             channel = ctx.author.voice.channel
+            loop = self.bot.loop
             if not self.voice_channel_connection:
                 self.voice_channel_connection = await channel.connect()
             with YoutubeDL(self.ydl_opts) as ydl:
                 user_input = " ".join(args)
+                
                 if user_input.find("https://www.youtube.com") != -1:
-                    search = ydl.extract_info(f"{user_input}",download=False) # --cookies allows us to find explicit videos
+                    # run_in_executor basically allows ydl to use threading
+                    search = await loop.run_in_executor(None, lambda: ydl.extract_info(user_input,download=False))
                     source = search['formats'][0]['url']
                     title = search['title']
                     duration = datetime.timedelta(seconds = search['duration'])
@@ -73,7 +91,8 @@ class music_player(commands.Cog):
                     
                 else:
                     # first find actual link- can't use youtube-dl because it will break on age-restrict
-                    search = ydl.extract_info(f"ytsearch:{user_input}" ,download=False)
+                    # run_in_executor basically allows ydl to use threading
+                    search = await loop.run_in_executor(None, lambda: ydl.extract_info(f"ytsearch:{user_input}" ,download=False))
                     if not search['entries']:
                         await ctx.send("error retrieving video")
                         return
@@ -81,7 +100,7 @@ class music_player(commands.Cog):
                     title = search['entries'][0]['title']
                     thumbnail = search['entries'][0]['thumbnail']
                     duration = datetime.timedelta(seconds = search['entries'][0]['duration'])
-    
+
                 self.music_queueue.append({'source':source,'title':title,'thumbnail':thumbnail,'duration':duration})
                 total_time = datetime.timedelta(seconds = 0)
                 for x in self.music_queueue:
@@ -90,6 +109,10 @@ class music_player(commands.Cog):
                     await ctx.send(f"{title} ({duration}) added (playing in {(self.current_song['duration'] - datetime.timedelta(seconds = self.seconds_playing)) + total_time})")
                 else:
                     await ctx.send(f"{title} ({duration}) added")
+                # testing timings
+
+                self.dl_time = time.perf_counter()
+                print(f"youtube_dl time: {self.dl_time - self.start_time}")
 
                 if not self.currently_playing:
                     self.currently_playing = True
@@ -110,9 +133,13 @@ class music_player(commands.Cog):
                 await channel.send(self.current_song['thumbnail']) # post thumbnail
             if not self.loop:
                 await channel.send(f"**now playing**: {self.current_song['title']} ({self.current_song['duration']})") # post thumbnail
-            self.voice_channel_connection.play(FFmpegPCMAudio(self.current_song['source'], options={'options':'-ar 48000'}))
-            self.end_time = time.perf_counter() # TESTING ONLY
+            self.voice_channel_connection.play(FFmpegPCMAudio(self.current_song['source'], **self.ffmpeg_options))
+
+            # testing performance
+            self.end_time = time.perf_counter()
+            print(f"ffmpeg_time: {self.end_time - self.dl_time}")
             print(f"TOTAL TIME: {self.end_time-self.start_time}\n")
+
             while self.voice_channel_connection and (self.voice_channel_connection.is_playing() and not self.skip) or self.paused: # don't go to next song until we're done with the current song
                 await asyncio.sleep(1)
                 self.seconds_playing += 1
