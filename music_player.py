@@ -3,6 +3,7 @@ from discord.ext import commands
 from yt_dlp import YoutubeDL
 from discord import FFmpegPCMAudio
 import time
+import copy
 import asyncio
 from os import getcwd
 
@@ -44,8 +45,8 @@ class music_player(commands.Cog):
         }
         self.ffmpeg_options = {
             'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 
-            'options': '-vn'
-            }
+            'options': '-vn',
+            } # -ar 22050 for funny
         
 
     @commands.Cog.listener()
@@ -65,7 +66,7 @@ class music_player(commands.Cog):
             
 
     @commands.command(name='play',help='plays video from youtube in voice channel')
-    async def play_music(self,ctx,*args):
+    async def play_music(self,ctx,*args, rate="48000"):
         self.start_time = time.perf_counter() # TESTING ONLY
         if len(args) == 0:
             await ctx.send("usage: !play {name of song / direct youtube link to song}")
@@ -73,6 +74,7 @@ class music_player(commands.Cog):
         if ctx.author.voice:
             channel = ctx.author.voice.channel
             loop = self.bot.loop
+            #loop = asyncio.get_event_loop()
             if not self.voice_channel_connection:
                 self.voice_channel_connection = await channel.connect()
             with YoutubeDL(self.ydl_opts) as ydl:
@@ -93,12 +95,16 @@ class music_player(commands.Cog):
                     if not search['entries']:
                         await ctx.send("error retrieving video")
                         return
+                    '''for x in search['entries'][0]['formats']: # find the first source with ASR of 48000 to match hz of ffmpeg
+                        if x['asr'] == 48000:
+                            source = x['url']
+                            break'''
                     source = search['entries'][0]['formats'][0]['url']
                     title = search['entries'][0]['title']
                     thumbnail = search['entries'][0]['thumbnail']
                     duration = timedelta(seconds = search['entries'][0]['duration'])
 
-                self.music_queueue.append({'source':source,'title':title,'thumbnail':thumbnail,'duration':duration})
+                self.music_queueue.append({'source':source,'title':title,'thumbnail':thumbnail,'duration':duration,'hz':rate})
                 total_time = timedelta(seconds = 0)
                 for x in self.music_queueue:
                     total_time += x['duration']
@@ -130,7 +136,9 @@ class music_player(commands.Cog):
                 await channel.send(self.current_song['thumbnail']) # post thumbnail
             if not self.loop:
                 await channel.send(f"**now playing**: {self.current_song['title']} ({self.current_song['duration']})") # post thumbnail
-            self.voice_channel_connection.play(FFmpegPCMAudio(self.current_song['source'], **self.ffmpeg_options))
+            modified_options = copy.deepcopy(self.ffmpeg_options)
+            modified_options['options'] += f" -ar {self.current_song['hz']}"
+            self.voice_channel_connection.play(FFmpegPCMAudio(self.current_song['source'], **modified_options))
 
             # testing performance
             self.end_time = time.perf_counter()
@@ -153,11 +161,19 @@ class music_player(commands.Cog):
     async def harry_potter_XD(self,ctx):
         await self.play_music(ctx,"harry potter distorted")
 
+    @commands.command(name='nightcore',aliases=['nc'],help='takes a youtube search/link and makes it nightcore')
+    async def nightcore(self,ctx,*args):
+        await self.play_music(ctx,*args,rate="27000")
+
+    @commands.command(name='nightcoretr',aliases=['nctr'],help='takes a youtube search/link and makes it nightcore')
+    async def nightcore_trap_remix(self,ctx,*args):
+        await self.play_music(ctx," ".join(args) + " trap remix",rate="27000")
+
     @commands.command(name='tr',help='makes youtube search a trap remix')
     async def trap_remix(self,ctx,*args):
         await self.play_music(ctx," ".join(args) + " trap remix")
 
-    @commands.command(name='current',help='plays video from youtube in voice channel')
+    @commands.command(name='current',aliases=['np'],help='plays video from youtube in voice channel')
     async def display_current(self,ctx):
         total_time = timedelta(seconds = self.seconds_playing)
         await ctx.send(f"**currently playing**: {self.current_song['title']}\n{total_time}/{self.current_song['duration']}")
