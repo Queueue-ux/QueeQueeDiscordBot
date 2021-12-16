@@ -60,8 +60,8 @@ class music_player(commands.Cog):
                 self.voice_channel_connection = None
                 self.currently_playing = False
             for x in before.channel.guild.channels:
-                if x.name == "general-garbage":
-                    await x.send("see ya!")
+                if x.name == "gif-spam":
+                    await x.send(f"see ya {member.nick if member.nick else member.display_name}!")
                     return
             
 
