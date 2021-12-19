@@ -165,6 +165,11 @@ class music_player(commands.Cog):
     async def nightcore(self,ctx,*args):
         await self.play_music(ctx,*args,rate="27000")
 
+    @commands.command(name='speed',aliases=['sp'],help='same as play, except last input is the hz (48000 is normal)')
+    async def speed(self,ctx,*args):
+        int(args[-1])
+        await self.play_music(ctx,*args,rate=args[-1])
+
     @commands.command(name='nightcoretr',aliases=['nctr'],help='takes a youtube search/link and makes it nightcore')
     async def nightcore_trap_remix(self,ctx,*args):
         await self.play_music(ctx," ".join(args) + " trap remix",rate="27000")
