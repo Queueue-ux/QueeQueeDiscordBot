@@ -76,7 +76,7 @@ class music_player(commands.Cog):
             channel = ctx.author.voice.channel
             loop = self.bot.loop
             #loop = asyncio.get_event_loop()
-            if not self.bot.voice_channels:
+            if not self.bot.voice_clients:
                 try:
                     self.voice_channel_connection = await channel.connect()
                 except ClientException:
@@ -129,7 +129,7 @@ class music_player(commands.Cog):
             await ctx.send('Error: must be in voice channel')
 
     async def _play_until_done(self,channel,options=True):
-        while (self.music_queueue and self.bot.voice_channels) or self.current_song:
+        while (self.music_queueue and self.bot.voice_clients) or self.current_song:
             self.seconds_playing = 0
             if self.loop:
                 if not self.current_song:
@@ -143,14 +143,14 @@ class music_player(commands.Cog):
                 await channel.send(f"**now playing**: {self.current_song['title']} ({self.current_song['duration']})") # post thumbnail
             modified_options = copy.deepcopy(self.ffmpeg_options)
             modified_options['options'] += f" -ar {self.current_song['hz']}"
-            self.bot.voice_channels[0].play(FFmpegPCMAudio(self.current_song['source'], **modified_options))
+            self.bot.voice_clients[0].play(FFmpegPCMAudio(self.current_song['source'], **modified_options))
 
             # testing performance
             self.end_time = time.perf_counter()
             print(f"ffmpeg_time: {self.end_time - self.dl_time}")
             print(f"TOTAL TIME: {self.end_time-self.start_time}\n")
 
-            while self.bot.voice_channels and (self.bot.voice_channels[0].is_playing() and not self.skip) or self.paused: # don't go to next song until we're done with the current song
+            while self.bot.voice_clients and (self.bot.voice_clients[0].is_playing() and not self.skip) or self.paused: # don't go to next song until we're done with the current song
                 await asyncio.sleep(1)
                 self.seconds_playing += 1
             self.skip = False
@@ -170,8 +170,8 @@ class music_player(commands.Cog):
     @commands.command(name='reset',help='plays video from youtube in voice channel')
     async def soft_reset(self,ctx):
         #just sets everything to their defaults in the constructor
-        if self.bot.voice_channels:
-            self.bot.voice_channels[0].pause()
+        if self.bot.voice_clients:
+            self.bot.voice_clients[0].pause()
         self.voice_channel_connection = None
         self.currently_playing = False
         self.paused = False
@@ -208,10 +208,10 @@ class music_player(commands.Cog):
     @commands.command(name='pause',help='pauses current stream of music')
     async def pause_music(self,ctx,*args):
         if ctx.author.voice: # check if invoking user is actually in channel
-            if self.bot.voice_channels:
-                if self.bot.voice_channels[0].is_playing():
+            if self.bot.voice_clients:
+                if self.bot.voice_clients[0].is_playing():
                     self.paused = True
-                    self.bot.voice_channels[0].pause()
+                    self.bot.voice_clients[0].pause()
                 else:
                     await ctx.send('player already paused')
 
@@ -225,7 +225,7 @@ class music_player(commands.Cog):
     @commands.command(name='skip',help='skips current song')
     async def skip_current(self,ctx,*args):
         if self.currently_playing:
-            self.bot.voice_channels[0].stop()
+            self.bot.voice_clients[0].stop()
             self.skip = True
             self.paused = False
             self.loop = False
@@ -236,7 +236,7 @@ class music_player(commands.Cog):
     async def love_you(self, ctx, *args):
         if ctx.author.voice:
             channel = ctx.author.voice.channel
-            if not self.bot.voice_channels:
+            if not self.bot.voice_clients:
                 self.voice_channel_connection = await channel.connect()
             self.music_queueue.append({'source':'love.mp3','title':'people fall in love','thumbnail':None,'duration':timedelta(seconds = 7)})
             if not self.currently_playing:
@@ -245,7 +245,7 @@ class music_player(commands.Cog):
 
     @commands.command(name='queue',aliases = ["q","que"],help='lists current song along with everything currently queued up')
     async def list_queue(self, ctx,list_full = False,*args):
-        if self.bot.voice_channels and self.current_song:
+        if self.bot.voice_clients and self.current_song:
             await ctx.send(f"**now playing**: {self.current_song['title']}({self.current_song['duration']})\nQueue:")
             total_time = timedelta(seconds = 0)
             for x in self.music_queueue:
@@ -300,17 +300,17 @@ class music_player(commands.Cog):
 
     @commands.command(name='leave',help='bot leaves channel')
     async def leave_channel(self, ctx,*args):
-        if self.bot.voice_channels:
+        if self.bot.voice_clients:
             #temp fix, removes bot from channel its connected to, only works if it has a single connection
-            await self.bot.voice_channels[0].disconnect()
+            await self.bot.voice_clients[0].disconnect()
         #self.voice_channel_connection = None
 
     @commands.command(name='resume',help='resumes current music stream')
     async def resume_music(self, ctx,*args):
         if ctx.author.voice:
-            if self.bot.voice_channels:
-                if self.bot.voice_channels[0].is_paused():
-                    self.bot.voice_channels[0].resume()
+            if self.bot.voice_clients:
+                if self.bot.voice_clients[0].is_paused():
+                    self.bot.voice_clients[0].resume()
                     self.paused = True
                 else:
                     await ctx.send('player already playing')
