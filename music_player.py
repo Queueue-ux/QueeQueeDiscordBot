@@ -2,6 +2,7 @@ from datetime import timedelta
 from discord.ext import commands
 from yt_dlp import YoutubeDL
 from discord import FFmpegPCMAudio
+from discord.errors import ClientException
 import time
 import copy
 import asyncio
@@ -76,7 +77,11 @@ class music_player(commands.Cog):
             loop = self.bot.loop
             #loop = asyncio.get_event_loop()
             if not self.voice_channel_connection:
-                self.voice_channel_connection = await channel.connect()
+                try:
+                    self.voice_channel_connection = await channel.connect()
+                except ClientException:
+                    self.voice_channel_connection = channel
+
             with YoutubeDL(self.ydl_opts) as ydl:
                 user_input = " ".join(args)
                 
