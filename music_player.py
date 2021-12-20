@@ -160,6 +160,21 @@ class music_player(commands.Cog):
     @commands.command(name='hp',help='plays video from youtube in voice channel')
     async def harry_potter_XD(self,ctx):
         await self.play_music(ctx,"harry potter distorted")
+    
+
+    @commands.command(name='reset',help='plays video from youtube in voice channel')
+    async def soft_reset(self,ctx):
+        #just sets everything to their defaults in the constructor
+        self.voice_channel_connection = None
+        self.currently_playing = False
+        self.paused = False
+        self.current_song = None
+        self.seconds_playing = 0
+        self.skip = False
+        self.loop = False
+        self.start_time = 0 # TESTING ONLY
+        self.end_time = 0 # TESTING ONLY
+        self.music_queueue = []
 
     @commands.command(name='nightcore',aliases=['nc'],help='takes a youtube search/link and makes it nightcore')
     async def nightcore(self,ctx,*args):
