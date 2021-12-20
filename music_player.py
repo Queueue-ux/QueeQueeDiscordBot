@@ -203,7 +203,10 @@ class music_player(commands.Cog):
     @commands.command(name='current',aliases=['np'],help='plays video from youtube in voice channel')
     async def display_current(self,ctx):
         total_time = timedelta(seconds = self.seconds_playing)
-        await ctx.send(f"**currently playing**: {self.current_song['title']}\n{total_time}/{self.current_song['duration']}")
+        if self.current_song:
+            await ctx.send(f"**currently playing**: {self.current_song['title']}\n{total_time}/{self.current_song['duration']}")
+        else:
+            await ctx.send("no song playing")
 
     @commands.command(name='pause',help='pauses current stream of music')
     async def pause_music(self,ctx,*args):
