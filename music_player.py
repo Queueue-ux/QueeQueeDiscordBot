@@ -165,6 +165,8 @@ class music_player(commands.Cog):
     @commands.command(name='reset',help='plays video from youtube in voice channel')
     async def soft_reset(self,ctx):
         #just sets everything to their defaults in the constructor
+        if self.voice_channel_connection:
+            self.voice_channel_connection.pause()
         self.voice_channel_connection = None
         self.currently_playing = False
         self.paused = False
