@@ -92,7 +92,7 @@ class music_player(commands.Cog):
                     title = search['title']
                     duration = timedelta(seconds = search['duration'])
                     thumbnail = None
-                    
+
                 else:
                     # first find actual link- can't use youtube-dl because it will break on age-restrict
                     # run_in_executor basically allows ydl to use threading
@@ -190,7 +190,7 @@ class music_player(commands.Cog):
     @commands.command(name='speed',aliases=['sp'],help='same as play, except last input is the hz (48000 is normal)')
     async def speed(self,ctx,*args):
         int(args[-1])
-        await self.play_music(ctx,*args,rate=args[-1])
+        await self.play_music(ctx,*args,rate=args[:-1])
 
     @commands.command(name='nightcoretr',aliases=['nctr'],help='takes a youtube search/link and makes it nightcore')
     async def nightcore_trap_remix(self,ctx,*args):
