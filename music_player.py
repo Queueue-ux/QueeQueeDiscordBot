@@ -56,9 +56,13 @@ class music_player(commands.Cog):
             checks for when the bot disconnects, and sets its voice connected variable to None
         '''
         if not after.channel:
+            if self.bot.user in before.channel.members and len(before.channel.members) == 1:
+                if self.bot.voice_clients:
+                    await self.bot.voice_clients[0].disconnect()
             if member == self.bot.user:
                 print(self.bot.user)
                 #self.voice_channel_connection = None
+                await self.soft_reset()
                 self.currently_playing = False
             for x in before.channel.guild.channels:
                 if x.name == "gif-spam":
@@ -168,7 +172,7 @@ class music_player(commands.Cog):
     
 
     @commands.command(name='reset',help='plays video from youtube in voice channel')
-    async def soft_reset(self,ctx):
+    async def soft_reset(self,ctx=None):
         #just sets everything to their defaults in the constructor
         if self.bot.voice_clients:
             self.bot.voice_clients[0].pause()
